@@ -17,8 +17,8 @@ References:
 
 """
 
-__authors__ = "Ashutosh Kumar"
-__credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
+__authors__ = "Monika Kodrycka, Ashutosh Kumar"
+__credits__ = ["Monika Kodrycka", "Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
@@ -35,7 +35,19 @@ from utils import helper_diis
 class HelperCCPert(object):
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega1):
 
-        # start of the ccpert class
+        """
+        Initializes the HelperCCPert object. 
+
+        Parameters:
+        -----------
+        neme: perturbation irrep
+        pert: perturbation object
+        ccsd: ccsd object
+        hbar: ccsd object
+        cclambda: ccsd object
+        omega1: frequency of the perturbation
+        """
+
         time_init = time.time()
 
         # Grabbing all the info from the wavefunctions passed
@@ -92,9 +104,6 @@ class HelperCCPert(object):
         self.y1 =  2.0 * self.x1.copy() 
         self.y2 =  4.0 * self.x2.copy()    
         self.y2 -= 2.0 * self.x2.swapaxes(2,3)
-
-	# Added
-        self.Fov = self.get_F("ov")
 
         # Conventions used :    
         # occ orbitals  : i, j, k, l, m, n
@@ -647,7 +656,19 @@ class HelperCCQuadraticResp(object):
 
     def __init__(self, ccsd,  cchbar, cclambda, ccpert_A, ccpert_B, ccpert_C):
 
-        # start of the CCQuadraticResp class 
+        """
+        Initializes the HelperCCQuadraticResp object.
+        
+        Parameters:
+        -----------
+        ccsd : ccsd object
+        cchbar : cchbar object
+        cclambda: cclambda object
+        ccpert_A: perturbation A
+        ccpert_B: perturbtaion B
+        ccpert_C: perturbtaion C
+
+        # start of the HelperCCQuadraticResp class 
         time_init = time.time()
         # Grab all the info from ccpert obejct, A, B and C are the perturbations
         # Ex. for dipole polarizabilities, A = mu, B = mu, C =mu (dipole operator) 
@@ -708,7 +729,17 @@ class HelperCCQuadraticResp(object):
 
 
     def quadraticresp(self):
+
+        """
+        Computes Quadratic Response Function
+        based on algoriths from [Koch:1991:3333]
         
+        Returns
+        -------
+        hyper:  quadratic response function
+
+        """        
+
         self.hyper = 0.0
         self.LAX = 0.0
         self.LAX2 = 0.0
@@ -744,7 +775,6 @@ class HelperCCQuadraticResp(object):
 
         self.hyper += self.LAX
 
-
         # <0|L1(C)[A_bar, X1(B)]|0>
         tmp = np.einsum('ia,ic->ac', self.y1_C,self.x1_B)
         self.LAX2 += np.einsum('ac,ac->',tmp,self.Avv)
@@ -767,7 +797,6 @@ class HelperCCQuadraticResp(object):
      
         self.hyper += self.LAX2
 
-
         # <0|L1(A)[B_bar,X1(C)]|0>
         tmp = ndot('ia,ic->ac', self.y1_A, self.x1_C)
         self.LAX3 += np.einsum('ac,ac->',tmp,self.Bvv)
@@ -789,7 +818,6 @@ class HelperCCQuadraticResp(object):
         self.LAX3 += np.einsum('bc,bc->',tmp,self.Bvv)
 
         self.hyper += self.LAX3
-
 
         # <0|L1(C)|[B_bar,X1(A)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_C,self.x1_A)
@@ -814,7 +842,6 @@ class HelperCCQuadraticResp(object):
 
         self.hyper += self.LAX4
 
-
         # <0|L1(A)[C_bar,X1(B)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_A,self.x1_B)
         self.LAX5 += np.einsum('ac,ac->',tmp,self.Cvv)
@@ -836,7 +863,6 @@ class HelperCCQuadraticResp(object):
         self.LAX5 += np.einsum('bc,bc->',tmp,self.Cvv)
 
         self.hyper += self.LAX5
-
 
         # <0|L1(B)|[C_bar,X1(A)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_B,self.x1_A)
@@ -860,9 +886,6 @@ class HelperCCQuadraticResp(object):
  
         self.hyper += self.LAX6
         
-
-        #print ("TEST LAX: ", self.LAX, self.LAX2, self.LAX3, self.LAX4, self.LAX5, self.LAX6)      
-
         self.Fz1 = 0
         self.Fz2 = 0
         self.Fz3 = 0
@@ -894,7 +917,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('jkbc,jkic->ib',self.x2_B,tmp)
         self.Fz1 -= np.einsum('ib,ib->',tmp,self.Aov)     
 
-
         # <0|L1(0)[B_bar,X1(A)],X1(C)]|0>
         tmp = np.einsum('ia,ja->ij',self.x1_A,self.Bov)
         tmp2 = np.einsum('ib,jb->ij',self.l1,self.x1_C)
@@ -913,7 +935,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('jkbc,jkic->ib',self.x2_C,tmp)
         self.Fz2 -= np.einsum('ib,ib->',tmp,self.Bov)
 
-  
         # <0|L2(0)[[B_bar,X2(A)],X1(C)]|0>  
         tmp = np.einsum('ia,ja->ij',self.x1_C,self.Bov)
         tmp2 = np.einsum('jkbc,ikbc->ij',self.x2_A,self.l2)
@@ -922,7 +943,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('ia,jkac->jkic',self.x1_C,self.l2)
         tmp = np.einsum('jkbc,jkic->ib',self.x2_A,tmp)
         self.Fz2 -= np.einsum('ib,ib->',tmp,self.Bov)
-        
 
         # <0|L1(0)[C_bar,X1(A)],X1(B)]|0>  
         tmp = np.einsum('ia,ja->ij',self.x1_A,self.Cov)
@@ -951,10 +971,7 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('jkbc,jkic->ib',self.x2_A,tmp)
         self.Fz3 -= np.einsum('ib,ib->',tmp,self.Cov)
 
-
         self.hyper += self.Fz1+self.Fz2+self.Fz3
-
-        #print ("TEST Fz: ",self.Fz1,self.Fz2,self.Fz3)
 
 
         self.G = 0
@@ -988,7 +1005,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('ia,ja->ji',self.x1_A,tmp)
         tmp2 = np.einsum('jb,ib->ji',self.x1_B,self.l1)
         self.G -= np.einsum('ji,ji->',tmp2,tmp)
-
 
         # <L2(0)|[[[H_bar,X1(A)],X1(B)],X1(C)]|0>
         tmp = np.einsum('jb,klib->klij',self.x1_A,self.Hooov)
@@ -1051,8 +1067,6 @@ class HelperCCQuadraticResp(object):
         tmp2  = np.einsum('jb,klba->klja',self.x1_A,self.l2)
         self.G -= np.einsum('klja,ajlk->',tmp2,tmp)
 
-
-
         # <L2(0)|[[[H_bar,X2(A)],X1(B)],X1(C)]|0>
         tmp = np.einsum('kc,jlbc->jlbk',self.x1_B,self.l2)
         tmp2 = np.einsum('ld,ikad->ikal',self.x1_C,self.Loovv)
@@ -1114,7 +1128,6 @@ class HelperCCQuadraticResp(object):
         tmp2 = np.einsum('ijab,klab->ijkl',self.x2_A,self.l2)
         self.G += np.einsum('ijkl,ijkl->',tmp,tmp2)
 
-
         # <L2(0)|[[[H_bar,X1(A)],X2(B)],X1(C)]|0>
         tmp = np.einsum('kc,jlbc->jlbk',self.x1_A,self.l2)
         tmp2 = np.einsum('ld,ikad->ikal',self.x1_C,self.Loovv)
@@ -1175,7 +1188,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('ld,ijkd->ijkl',self.x1_C,tmp)
         tmp2 = np.einsum('ijab,klab->ijkl',self.x2_B,self.l2)
         self.G += np.einsum('ijkl,ijkl->',tmp,tmp2)
-
  
         # <L2(0)|[[[H_bar,X1(A)],X1(B)],X2(C)]|0>
         tmp = np.einsum('kc,jlbc->jlbk',self.x1_A,self.l2)
@@ -1238,10 +1250,7 @@ class HelperCCQuadraticResp(object):
         tmp2 = np.einsum('ijab,klab->ijkl',self.x2_C,self.l2)
         self.G += np.einsum('ijkl,ijkl->',tmp,tmp2)
 
-
         self.hyper += self.G
-  
-        #print ("TEST Gz: ",self.G)
 
 
         self.Bcon1 = 0
@@ -1260,7 +1269,6 @@ class HelperCCQuadraticResp(object):
 
         tmp2 = np.einsum('miae,me->ia',tmp,self.x1_B)         
         self.Bcon1 += ndot('ia,ia->',tmp2,self.x1_C)
-
 
         # <O|L2(A)|[[Hbar(0),X1(B)],X1(C)]|0>
         tmp   = -1.0*np.einsum('janc,nkba->jckb',self.Hovov,self.y2_A) 
@@ -1293,7 +1301,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('kc,ac->ka',self.x1_B,tmp)
         tmp2 = np.einsum('ld,lkda->ka',self.x1_C,self.Loovv)
         self.Bcon1 -= ndot('ka,ka->',tmp2,tmp)
-
 
         # <O|L2(A)[[Hbar(0),X2(B)],X2(C)]|0>
         tmp = np.einsum("klcd,ijcd->ijkl",self.x2_C,self.y2_A)   
@@ -1334,7 +1341,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("klcd,ikac->lida",self.x2_C,self.y2_A)
         tmp = np.einsum("lida,jlbd->ijab",tmp,self.Loovv)
         self.Bcon1 += 2.*np.einsum("ijab,ijab->",tmp,self.x2_B) 
-
 
         # <O|L1(A)[[Hbar(0),X1(B)],X2(C)]]|0> 
         tmp  = 2.*np.einsum("jkbc,kc->jb",self.x2_C,self.y1_A)         
@@ -1486,7 +1492,6 @@ class HelperCCQuadraticResp(object):
         self.Bcon1 += np.einsum('jnci,jinc->',tmp,self.Hooov)
 
 
-
         self.Bcon2 = 0
         # <O|L1(B)[[Hbar(0),X1(A),X1(C)]]|0>
         tmp  = -1.0*np.einsum('jc,kb->jkcb',self.Hov,self.y1_B)
@@ -1495,7 +1500,6 @@ class HelperCCQuadraticResp(object):
         tmp += np.einsum('jkib,ic->jkcb',self.Hooov,self.y1_B)
         tmp -= 2.0*np.einsum('jkic,ib->jkcb',self.Hooov,self.y1_B)
         tmp += np.einsum('kjic,ib->jkcb',self.Hooov,self.y1_B)
-
         tmp += 2.0*np.einsum('ajcb,ka->jkcb',self.Hvovv,self.y1_B)
         tmp -= np.einsum('ajbc,ka->jkcb',self.Hvovv,self.y1_B)
         tmp += 2.0*np.einsum('akbc,ja->jkcb',self.Hvovv,self.y1_B)
@@ -1729,7 +1733,6 @@ class HelperCCQuadraticResp(object):
         self.Bcon2 += np.einsum('jnci,jinc->',tmp,self.Hooov)
         
 
-
         self.Bcon3 = 0
         # <0|L1(C)[[Hbar(0),X1(A),X1(B)]]|0>
         tmp  = -1.0*np.einsum('jc,kb->jkcb',self.Hov,self.y1_C)
@@ -1746,7 +1749,6 @@ class HelperCCQuadraticResp(object):
 
         tmp2 = np.einsum('miae,me->ia',tmp,self.x1_A)         
         self.Bcon3 += ndot('ia,ia->',tmp2,self.x1_B)
-
 
         # <0|L2(C)|[[Hbar(0),X1(A)],X1(B)]|0>
         tmp   = -1.0*np.einsum('janc,nkba->jckb',self.Hovov,self.y2_C) 
@@ -1779,7 +1781,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('kc,ac->ka',self.x1_A,tmp)
         tmp2 = np.einsum('ld,lkda->ka',self.x1_B,self.Loovv)
         self.Bcon3 -= ndot('ka,ka->',tmp2,tmp)
-
 
         # <0|L2(C)[[Hbar(0),X2(A)],X2(B)]|0>
         tmp = np.einsum("klcd,ijcd->ijkl",self.x2_B,self.y2_C)   
@@ -1821,7 +1822,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("lida,jlbd->ijab",tmp,self.Loovv)
         self.Bcon3 += 2.*np.einsum("ijab,ijab->",tmp,self.x2_A)
 
-
         # <0|L1(C)[[Hbar(0),X1(A)],X2(B)]]|0> 
         tmp = 2.*np.einsum("jkbc,kc->jb",self.x2_B,self.y1_C)
         tmp -= np.einsum("jkcb,kc->jb",self.x2_B,self.y1_C)
@@ -1835,7 +1835,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("jkbc,jibc->ki",self.x2_B,self.Loovv)
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_A)
         self.Bcon3 -= np.einsum("ka,ka->",tmp,self.y1_C)
-
 
         # <0|L2(C)[[Hbar(0),X1(A)],X2(B)]]|0> 
         tmp = np.einsum("klcd,lkdb->cb",self.x2_B,self.y2_C)
@@ -1970,13 +1969,9 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('ia,nkba->nkbi',self.x1_B,self.y2_C)
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_A,tmp)
         self.Bcon3 += np.einsum('jnci,jinc->',tmp,self.Hooov)
-        
       
- 
         self.hyper += self.Bcon1 + self.Bcon2+ self.Bcon3
    
-        #print("Bcon1, Bcon2, Bcon3: ",self.Bcon1, self.Bcon2, self.Bcon3)
-
 
         return self.hyper
 
