@@ -19,7 +19,7 @@ import os.path
 import sys
 #dirname = os.path.dirname(os.path.abspath(__file__))
 #sys.path.append(os.path.join(dirname, '../../../Coupled-Cluster/RHF'))
-sys.path.append('/home/mok0005/polarizability/psi4numpy/Response-Theory/Coupled-Cluster/RHF/hyperpolarizability_optimized_2nd')
+sys.path.append('/home/kordi/Hopper/mine/Coupled-Cluster-Quadratic-Response-Theory')
 import numpy as np
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 # Import all the coupled cluster utilities
@@ -35,7 +35,6 @@ psi4.set_memory(int(2e9), False)
 psi4.core.set_output_file('output.dat', False)
 
 # can only handle C1 symmetry
-
 mol = psi4.geometry("""
 O
 H 1 1.8084679
@@ -45,7 +44,6 @@ symmetry c1
 no_reorient 
 no_com
 """)
-
 
 # setting up SCF options
 psi4.set_options({
@@ -78,26 +76,9 @@ cclambda = HelperCCLambda(ccsd, cchbar)
 cclambda.compute_lambda(r_conv=1e-12)
 
 # frequency of calculation
-omega_nm = 694
-# conver from nm into hartree
-omega_nm = 694
-omega = (pc.c * pc.h * 1e9) / (pc.hartree2J * omega_nm)
-
-omega1_nm = 694
-#omega1 = (pc.c * pc.h * 1e9) / (pc.hartree2J * omega1_nm)
-omega1 =  0.0656
-omega2_nm = 694
-#omega2 = (pc.c * pc.h * 1e9) / (pc.hartree2J * omega2_nm)
-#omega2 =  0.07200276
-#omega2 = 0.0656
+omega1 = 0.0656
 omega2 = 0.14238
-#omega_sum_nm = -0.1312
-#omega_sum = (pc.c * pc.h * 1e9) / (pc.hartree2J * omega_sum_nm)
-#print("Omega sum", omega_sum)
-
-#omega_sum = -omega1-omega2
 omega_sum = -(omega1+omega2)
-#omega_sum =  0.0656
 
 
 cart = ['X', 'Y', 'Z']
@@ -222,7 +203,8 @@ psi4.set_options({'e_convergence': 1e-10})
 psi4.set_options({'r_convergence': 1e-10})
 psi4.set_options({'omega': [694, 'nm']})
 psi4.properties('ccsd', properties=['polarizability'])
-psi4.compare_values(Isotropic_polar, psi4.variable("CCSD DIPOLE POLARIZABILITY @ 694NM"),  6, "CCSD Isotropic Dipole Polarizability @ 694 nm (Length Gauge)") #TEST
+psi4.compare_values(Isotropic_polar, psi4.variable("CCSD DIPOLE POLARIZABILITY @ 694NM"),  \
+6, "CCSD Isotropic Dipole Polarizability @ 694 nm (Length Gauge)") #TEST
 """
 
 #psi4.compare_values(

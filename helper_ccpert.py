@@ -36,16 +36,21 @@ class HelperCCPert(object):
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega1):
 
         """
-        Initializes the HelperCCPert object. 
+        Initializes the HelperCCPert object
 
         Parameters:
         -----------
-        neme: perturbation irrep
+        neme: string 
+            Specifies perturbation irrep.
         pert: perturbation object
         ccsd: ccsd object
-        hbar: ccsd object
-        cclambda: ccsd object
-        omega1: frequency of the perturbation
+             A initialized ccsd object. 
+        hbar: hbar object
+             A initialized hbar object.  
+        cclambda: cclambda object
+	     A initialized cclambda object. 
+        omega1: float 
+	      Frequency of the perturbation.
         """
 
         time_init = time.time()
@@ -89,9 +94,10 @@ class HelperCCPert(object):
 
         # Build the denominators from diagonal elements of Hbar and omega
         self.Dia = self.Hoo.diagonal().reshape(-1, 1) - self.Hvv.diagonal()
-        self.Dijab = self.Hoo.diagonal().reshape(-1, 1, 1, 1) + self.Hoo.diagonal().reshape(-1, 1, 1) - self.Hvv.diagonal().reshape(-1, 1) - self.Hvv.diagonal() 
-        self.Dia += self.omega1      #ask about it!
-        self.Dijab += self.omega1    #ask about it!
+        self.Dijab = self.Hoo.diagonal().reshape(-1, 1, 1, 1) + self.Hoo.diagonal().reshape(-1, 1, 1) \
+                    - self.Hvv.diagonal().reshape(-1, 1) - self.Hvv.diagonal() 
+        self.Dia += self.omega1      
+        self.Dijab += self.omega1   
         
         # Guesses for X1 and X2 amplitudes (First order perturbed T amplitudes)
         self.x1 = self.build_Avo().swapaxes(0,1)/self.Dia
@@ -111,6 +117,21 @@ class HelperCCPert(object):
         # all oribitals : p, q, r, s, t, u, v
 
     def get_MO(self, string):
+ 
+        """
+        Obtains integrals in the MO basis.
+
+        Parameters:
+        -----------
+           string: string
+             String of integral indexes.    
+               
+	Returns:
+        --------  
+           MO: ndarray
+             Integrals in the MO basis.
+        """   
+ 
         if len(string) != 4:
             psi4.core.clean()
             raise Exception('get_MO: string %s must have 4 elements.' % string)
@@ -118,6 +139,21 @@ class HelperCCPert(object):
                        self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
     def get_F(self, string):
+
+        """
+        Obtains the Fock Matix.
+
+        Parameters:
+        -----------
+           string: string
+             String of Fock indexes.    
+               
+        Returns:
+        --------  
+           F: ndarray
+             The Fock Matrix in the MO basis.
+        """ 
+
         if len(string) != 2:
             psi4.core.clean()
             raise Exception('get_F: string %s must have 2 elements.' % string)
@@ -125,6 +161,21 @@ class HelperCCPert(object):
 
 
     def get_pert(self, string):
+
+        """
+        Obtains the Perturbation Matix.
+
+        Parameters:
+        -----------
+           string: string
+             String of perturbation indexes.    
+               
+        Returns:
+        --------  
+           per: ndarray
+             The perturbation matrix in the MO basis.
+        """
+
         if len(string) != 2:
             psi4.core.clean()
             raise Exception('get_pert: string %s must have 2 elements.' % string)
@@ -160,33 +211,28 @@ class HelperCCPert(object):
         return Avv
 
     def build_Aovoo(self):
-        Aovoo = 0
-        Aovoo += ndot('ijeb,me->mbij', self.t2, self.get_pert('ov'))
+        Aovoo = ndot('ijeb,me->mbij', self.t2, self.get_pert('ov'))
         return Aovoo
 
     def build_Avvvo(self):
-        Avvvo = 0
-        Avvvo -= ndot('miab,me->abei', self.t2, self.get_pert('ov'))
+        Avvvo = -1.0*ndot('miab,me->abei', self.t2, self.get_pert('ov'))
         return Avvvo
 
     def build_Avvoo(self):
-        Avvoo = 0
-        Avvoo += ndot('ijeb,ae->abij', self.t2, self.build_Avv())
+        Avvoo = ndot('ijeb,ae->abij', self.t2, self.build_Avv())
         Avvoo -= ndot('mjab,mi->abij', self.t2, self.build_Aoo())
         return Avvoo
 
     # Intermediates to avoid construction of 3 body Hbar terms
     # in solving X amplitude equations.
     def build_Zvv(self):
-        Zvv = 0
-        Zvv += ndot('amef,mf->ae', self.Hvovv, self.x1, prefactor=2.0)
+        Zvv = ndot('amef,mf->ae', self.Hvovv, self.x1, prefactor=2.0)
         Zvv += ndot('amfe,mf->ae', self.Hvovv, self.x1, prefactor=-1.0)
         Zvv -= ndot('mnaf,mnef->ae', self.x2, self.Loovv)
         return Zvv
 
     def build_Zoo(self):
-        Zoo = 0
-        Zoo -= ndot('mnie,ne->mi', self.Hooov, self.x1, prefactor=2.0)
+        Zoo = ndot('mnie,ne->mi', self.Hooov, self.x1, prefactor=2.0)
         Zoo -= ndot('nmie,ne->mi', self.Hooov, self.x1, prefactor=-1.0)
         Zoo -= ndot('mnef,inef->mi', self.Loovv, self.x2)
         return Zoo
@@ -194,48 +240,64 @@ class HelperCCPert(object):
     # Intermediates to avoid construction of 3 body Hbar terms
     # in solving Y amplitude equations (just like in lambda equations).
     def build_Goo(self, t2, y2):
-        Goo = 0
-        Goo += ndot('mjab,ijab->mi', t2, y2)
+        Goo = ndot('mjab,ijab->mi', t2, y2)
         return Goo
 
     def build_Gvv(self, y2, t2):
-        Gvv = 0
-        Gvv -= ndot('ijab,ijeb->ae', y2, t2)
+        Gvv = -1.0*ndot('ijab,ijeb->ae', y2, t2)
         return Gvv
 
     def update_X(self, omega):
-        # X1 and X2 amplitudes are the Fourier analogues of first order perturbed T1 and T2 amplitudes, 
-        # (eq. 65, [Crawford:xxxx]). For a given perturbation, these amplitudes are frequency dependent and 
-        # can be obtained by solving a linear system of equations, (Hbar(0) - omgea * I)X = Hbar(1)
-        # Refer to eq 70 of [Crawford:xxxx]. Writing t_mu^(1)(omega) as X_mu and Hbar^(1)(omega) as A_bar,
-        # X1 equations:
-        # omega * X_ia = <phi^a_i|A_bar|O> + <phi^a_i|Hbar^(0)|phi^c_k> * X_kc + <phi^a_i|Hbar^(0)|phi^cd_kl> * X_klcd
-        # X2 equations:
-        # omega * X_ijab = <phi^ab_ij|A_bar|O> + <phi^ab_ij|Hbar^(0)|phi^c_k> * X_kc + <phi^ab_ij|Hbar^(0)|phi^cd_kl> * X_klcd
-        # Note that the RHS terms have exactly the same structure as EOM-CCSD sigma equations.
-        # Spin Orbital expressions (Einstein summation):
 
-        # X1 equations: 
-        # -omega * X_ia + A_bar_ai + X_ie * Hvv_ae - X_ma * Hoo_mi + X_me * Hovvo_maei + X_miea * Hov_me 
-        # + 0.5 * X_imef * Hvovv_amef - 0.5 * X_mnae * Hooov_mnie = 0
+        """
+        Updates X1 and X2 amplitudes.
+  
+        Parameters:
+        ----------
+            omega: float
+	       Perturbation frequency.
 
-        # X2 equations:
-        # -omega * X_ijab + A_bar_abij + P(ij) X_ie * Hvvvo_abej - P(ab) X_ma * Hovoo_mbij 
-        # + P(ab) X_mf * Hvovv_amef * t_ijeb - P(ij) X_ne * Hooov_mnie * t_mjab 
-        # + P(ab) X_ijeb * Hvv_ae  - P(ij) X_mjab * Hov_mi + 0.5 * X_mnab * Hoooo_mnij + 0.5 * X_ijef * Hvvvv_abef 
-        # + P(ij) P(ab) X_miea * Hovvo_mbej - 0.5 * P(ab) X_mnaf * Hoovv_mnef * t_ijeb
-        # - 0.5 * P(ij) X_inef * Hoovv_mnef * t_mjab    
+        Returns: 
+        -------
+            rms: float
+              Residual of amplitudes. 
+                  
+        Note:
+        ------ 
+         X1 and X2 amplitudes are the Fourier analogues of first order perturbed T1 and T2 amplitudes, 
+         (eq. 65, [Crawford:xxxx]). For a given perturbation, these amplitudes are frequency dependent and 
+         can be obtained by solving a linear system of equations, (Hbar(0) - omgea * I)X = Hbar(1)
+         Refer to eq 70 of [Crawford:xxxx]. Writing t_mu^(1)(omega) as X_mu and Hbar^(1)(omega) as A_bar,
+         X1 equations:
+         omega * X_ia = <phi^a_i|A_bar|O> + <phi^a_i|Hbar^(0)|phi^c_k> * X_kc + <phi^a_i|Hbar^(0)|phi^cd_kl> * X_klcd
+         X2 equations:
+         omega * X_ijab = <phi^ab_ij|A_bar|O> + <phi^ab_ij|Hbar^(0)|phi^c_k> * X_kc + <phi^ab_ij|Hbar^(0)|phi^cd_kl> * X_klcd
+         Note that the RHS terms have exactly the same structure as EOM-CCSD sigma equations.
+         Spin Orbital expressions (Einstein summation):
 
-        # It should be noted that in order to avoid construction of 3-body Hbar terms appearing in X2 equations like,
-        # Hvvooov_bamjif = Hvovv_amef * t_ijeb, 
-        # Hvvooov_banjie = Hooov_mnie * t_mjab,
-        # Hvoooov_bmnjif = Hoovv_mnef * t_ijeb, 
-        # Hvvoovv_banjef = Hoovv_mnef * t_mjab,  
-        # we make use of Z intermediates: 
-        # Zvv_ae = - Hooov_amef * X_mf - 0.5 * X_mnaf * Hoovv_mnef,  
-        # Zoo_mi = - X_ne * Hooov_mnie - 0.5 * Hoovv_mnef * X_inef,  
-        # And then contract Z with T2 amplitudes.
-           
+         #X1 equations: 
+         -omega * X_ia + A_bar_ai + X_ie * Hvv_ae - X_ma * Hoo_mi + X_me * Hovvo_maei + X_miea * Hov_me 
+         + 0.5 * X_imef * Hvovv_amef - 0.5 * X_mnae * Hooov_mnie = 0
+
+         X2 equations:
+         -omega * X_ijab + A_bar_abij + P(ij) X_ie * Hvvvo_abej - P(ab) X_ma * Hovoo_mbij 
+         + P(ab) X_mf * Hvovv_amef * t_ijeb - P(ij) X_ne * Hooov_mnie * t_mjab 
+         + P(ab) X_ijeb * Hvv_ae  - P(ij) X_mjab * Hov_mi + 0.5 * X_mnab * Hoooo_mnij + 0.5 * X_ijef * Hvvvv_abef 
+         + P(ij) P(ab) X_miea * Hovvo_mbej - 0.5 * P(ab) X_mnaf * Hoovv_mnef * t_ijeb
+         - 0.5 * P(ij) X_inef * Hoovv_mnef * t_mjab    
+
+         It should be noted that in order to avoid construction of 3-body Hbar terms appearing in X2 equations like,
+         Hvvooov_bamjif = Hvovv_amef * t_ijeb, 
+         Hvvooov_banjie = Hooov_mnie * t_mjab,
+         Hvoooov_bmnjif = Hoovv_mnef * t_ijeb, 
+         Hvvoovv_banjef = Hoovv_mnef * t_mjab,  
+         we make use of Z intermediates: 
+         Zvv_ae = - Hooov_amef * X_mf - 0.5 * X_mnaf * Hoovv_mnef,  
+         Zoo_mi = - X_ne * Hooov_mnie - 0.5 * Hoovv_mnef * X_inef,  
+         And then contract Z with T2 amplitudes.
+          
+        """ 
+  
         # X1 equations 
         r_x1  = self.build_Avo().swapaxes(0,1).copy()
         r_x1 -= omega * self.x1.copy()
@@ -284,11 +346,20 @@ class HelperCCPert(object):
         rms = 0
         rms += np.einsum('ia,ia->', old_x1 - self.x1, old_x1 - self.x1)
         rms += np.einsum('ijab,ijab->', old_x2 - self.x2, old_x2 - self.x2)
+
         return np.sqrt(rms)
 
     def inhomogenous_y2(self):
 
-        # Inhomogenous terms appearing in Y2 equations
+        """
+        Computes inhomogenous terms appearing in Y2 equations.
+  
+        Returns: 
+        -------
+            r_y2: ndarray
+              Perturbed Y2 amplitudes. 
+        """
+
         # <O|L1(0)|A_bar|phi^ab_ij>
         r_y2  = ndot('ia,jb->ijab', self.l1, self.build_Aov(), prefactor=2.0)
         r_y2 -= ndot('ja,ib->ijab', self.l1, self.build_Aov()) 
@@ -335,7 +406,7 @@ class HelperCCPert(object):
         r_y2 -= ndot('in,jnba->ijab', tmp, self.l2)
         # <O|L2(0)|[Hbar(0), X2]|phi^ab_ij>
         tmp   = ndot('ijef,mnef->ijmn', self.l2, self.x2, prefactor=0.5)        
-        r_y2 += ndot('ijmn,mnab->ijab', tmp, self.get_MO('oovv'))        
+        r_y2 += ndot('ijmn,mnab->ijab', tmp, self.get_MO('oovv'))     
         tmp   = ndot('ijfe,mnef->ijmn', self.get_MO('oovv'), self.x2, prefactor=0.5)        
         r_y2 += ndot('ijmn,mnba->ijab', tmp, self.l2)        
         tmp   = ndot('mifb,mnef->ibne', self.l2, self.x2)        
@@ -357,8 +428,16 @@ class HelperCCPert(object):
 
 
     def inhomogenous_y1(self):
-        
-        # Inhomogenous terms appearing in Y1 equations
+
+        """
+        Computes inhomogenous terms appearing in Y1 equations.
+  
+        Returns: 
+        -------
+            r_y1: ndarray
+              Perturbed Y1 amplitudes. 
+        """
+
         # <O|A_bar|phi^a_i>
         r_y1 = 2.0 * self.build_Aov().copy()
         # <O|L1(0)|A_bar|phi^a_i>
@@ -436,22 +515,38 @@ class HelperCCPert(object):
 
     def update_Y(self, omega):
 
-        # Y1 and Y2 amplitudes are the Fourier analogues of first order perturbed L1 and L2 amplitudes, 
-        # While X amplitudes are referred to as right hand perturbed amplitudes, Y amplitudes are the
-        # left hand perturbed amplitudes. Just like X1 and X2, they can be obtained by solving a linear 
-        # sytem of equations. Refer to eq 73 of [Crawford:xxxx]. for Writing l_mu^(1)(omega) as Y_mu, 
-        # Y1 equations:
-        # omega * Y_ia + Y_kc * <phi^c_k|Hbar(0)|phi^a_i>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^a_i> 
-        # + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^a_i> = 0
-        # Y2 equations: 
-        # omega * Y_ijab + Y_kc * <phi^c_k|Hbar(0)|phi^ab_ij>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^ab_ij> 
-        # + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^ab_ij> = 0
-        # where Hbar_bar(1)(omega) = Hbar(1) + [Hbar(0), T(1)] = A_bar + [Hbar(0), X]
-        # Note that the homogenous terms of Y1 and Y2 equations except the omega term are exactly identical in 
-        # structure to the L1 and L2 equations and just like lambdas, the equations for these Y amplitudes have 
-        # been derived using the unitray group approach. Please refer to helper_cclambda file for a complete  
-        # decsription.
+        """
+        Updates Y1 and Y2 amplitudes.
+  
+        Parameters:
+        ----------
+            omega: float
+               Perturbation frequency.
 
+        Returns: 
+        -------
+            rms: float
+              Residual of amplitudes. 
+                  
+        Note:
+        ------ 
+         Y1 and Y2 amplitudes are the Fourier analogues of first order perturbed L1 and L2 amplitudes, 
+         While X amplitudes are referred to as right hand perturbed amplitudes, Y amplitudes are the
+         left hand perturbed amplitudes. Just like X1 and X2, they can be obtained by solving a linear 
+         sytem of equations. Refer to eq 73 of [Crawford:xxxx]. for Writing l_mu^(1)(omega) as Y_mu, 
+         Y1 equations:
+         omega * Y_ia + Y_kc * <phi^c_k|Hbar(0)|phi^a_i>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^a_i> 
+         + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^a_i> = 0
+         Y2 equations: 
+         omega * Y_ijab + Y_kc * <phi^c_k|Hbar(0)|phi^ab_ij>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^ab_ij> 
+         + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^ab_ij> = 0
+         where Hbar_bar(1)(omega) = Hbar(1) + [Hbar(0), T(1)] = A_bar + [Hbar(0), X]
+         Note that the homogenous terms of Y1 and Y2 equations except the omega term are exactly identical in 
+         structure to the L1 and L2 equations and just like lambdas, the equations for these Y amplitudes have 
+         been derived using the unitray group approach. Please refer to helper_cclambda file for a complete  
+         decsription.
+        """
+ 
         # Y1 equations
         # Inhomogenous terms
         r_y1 = self.im_y1.copy()
@@ -510,6 +605,22 @@ class HelperCCPert(object):
         return np.sqrt(rms)
 
     def pseudoresponse(self, hand):
+
+        """
+        Obtains psudoresponse value.
+  
+        Parameters:
+        ----------
+            hand: string
+               Specifies the type of aplitudes to be computed.
+	       Right: X
+ 	       Left: Y
+
+        Returns: 
+        -------
+            polar: float
+              Psudoresponse value. 
+        """
         polar1 = 0
         polar2 = 0
         if hand == 'right':
@@ -517,22 +628,50 @@ class HelperCCPert(object):
         else:
             z1 = self.y1 ; z2 = self.y2
 
-        # To match the pseudoresponse values with PSI4
+        # To match ihe pseudoresponse values with PSI4
         polar1 += ndot('ia,ai->', z1, self.build_Avo(), prefactor=2.0)
         tmp = self.pertbar_ijab + self.pertbar_ijab.swapaxes(0,1).swapaxes(2,3) 
         polar2 += ndot('ijab,ijab->', z2, tmp, prefactor=2.0)
         polar2 += ndot('ijba,ijab->', z2, tmp, prefactor=-1.0)
 
-        return -2.0 * (polar1 + polar2)
+        polar = -2.0 * (polar1 + polar2)
+
+        return polar
 
     def solve(self, hand, r_conv=1.e-7, maxiter=100, max_diis=8, start_diis=1):
+
+        """
+        Engine which solves perturbed amplitudes.
+  
+        Parameters:
+        ----------
+            hand: string
+               Specifies the type of aplitudes to be computed.
+               Right: X
+               Left: Y
+            r_conv: float, optional
+               Convergance threshold.
+            maxiter: float, optional  
+               Maximum number of CC iterations.
+            max_diis: float, optional
+               Maximum numer of DISS steps.    
+            start_diis: float, optional
+               The diss step to begin with.    
+
+        Returns:
+        --------
+            pseudoresponse: float
+               The converged pseudoresponse value.        
+
+        """
 
         ### Start of the solve routine 
         ccpert_tstart = time.time()
         
         # calculate the pseudoresponse from guess amplitudes
         pseudoresponse_old = self.pseudoresponse(hand)
-        print("CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (self.name, 0, pseudoresponse_old, -pseudoresponse_old))
+        print("CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % \
+             (self.name, 0, pseudoresponse_old, -pseudoresponse_old))
 
         # Set up DIIS before iterations begin
         if hand == 'right':
@@ -556,7 +695,8 @@ class HelperCCPert(object):
             pseudoresponse = self.pseudoresponse(hand)
 
             # Print CCPERT iteration information
-            print('CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (self.name, CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_object.diis_size))
+            print('CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % \
+                 (self.name, CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_object.diis_size))
 
             # Check convergence
             if (rms < r_conv):
@@ -585,6 +725,21 @@ class HelperCCLinresp(object):
 
     def __init__(self, cclambda, ccpert_A, ccpert_B):
 
+        """
+        Initializes the HelperCCLinresp object.
+        
+        Parameters:
+        -----------
+        cclambda: cclambda object
+             A initialized cclambda object.  
+        ccpert_A: ccpert object
+             A initialized ccpert object containing all info about perturbation A.
+        ccpert_B: ccpert object
+             A initialized ccpert object containing all info about perturbation B.
+        ccpert_C: ccpert object  
+             A initialized ccpert object containing all info about perturbation C. 
+        """
+
         # start of the cclinresp class 
         time_init = time.time()
         # Grab all the info from ccpert obejct, a and b here are the two 
@@ -605,15 +760,25 @@ class HelperCCLinresp(object):
         self.x2_B = ccpert_B.x2
         self.y1_B = ccpert_B.y1
         self.y2_B = ccpert_B.y2
-
 	
-
     def linresp(self):
 
-        # Please refer to equation 78 of [Crawford:xxxx]. 
-        # Writing H(1)(omega) = B, T(1)(omega) = X, L(1)(omega) = Y
-        # <<A;B>> =  <0|Y(B) * A_bar|0> + <0|(1+L(0))[A_bar, X(B)]|0> 
-        #                polar1                    polar2
+        """
+        Computes the Linear Response Function value.
+ 
+        Returns
+        -------
+        polar: float
+              The linear response function value.
+
+        Note:
+        -----
+        Refer to equation 78 of [Crawford:xxxx]. 
+        Writing H(1)(omega) = B, T(1)(omega) = X, L(1)(omega) = Y
+        <<A;B>> =  <0|Y(B) * A_bar|0> + <0|(1+L(0))[A_bar, X(B)]|0> 
+                        polar1                    polar2
+        """
+
         self.polar1 = 0
         self.polar2 = 0
         # <0|Y1(B) * A_bar|0>
@@ -649,7 +814,9 @@ class HelperCCLinresp(object):
         tmp = ndot('ijab,ijcb->ac', self.l2, self.x2_B,)
         self.polar2 += ndot('ac,ac->', tmp, self.ccpert_A.build_Avv(), prefactor=0.5)
 
-        return -1.0*(self.polar1 + self.polar2)
+        self.polar = -1.0*(self.polar1 + self.polar2)
+
+        return self.polar
 
 
 class HelperCCQuadraticResp(object):
@@ -661,14 +828,20 @@ class HelperCCQuadraticResp(object):
         
         Parameters:
         -----------
-        ccsd : ccsd object
-        cchbar : cchbar object
+        ccsd: ccsd object
+             A initialized ccsd object.        
+        cchbar: cchbar object
+             A initialized cchbar object.  
         cclambda: cclambda object
-        ccpert_A: perturbation A
-        ccpert_B: perturbtaion B
-        ccpert_C: perturbtaion C
+             A initialized cclambda object.  
+        ccpert_A: ccpert object
+             A initialized ccpert object containing all info about perturbation A.
+        ccpert_B: ccpert object
+             A initialized ccpert object containing all info about perturbation B.
+        ccpert_C: ccpert object  
+             A initialized ccpert object containing all info about perturbation C. 
+        """
 
-        # start of the HelperCCQuadraticResp class 
         time_init = time.time()
         # Grab all the info from ccpert obejct, A, B and C are the perturbations
         # Ex. for dipole polarizabilities, A = mu, B = mu, C =mu (dipole operator) 
@@ -731,31 +904,19 @@ class HelperCCQuadraticResp(object):
     def quadraticresp(self):
 
         """
-        Computes Quadratic Response Function
-        based on algoriths from [Koch:1991:3333]
+        Computes Quadratic Response Function value
+        Refer to eq. 107 of [Koch:1991:3333] for the general form of quadratic response functions.
         
         Returns
         -------
-        hyper:  quadratic response function
+        hyper: float
+              The quadratic response function value.
 
         """        
 
-        self.hyper = 0.0
-        self.LAX = 0.0
-        self.LAX2 = 0.0
-        self.LAX3 = 0.0
-        self.LAX4 = 0.0
-        self.LAX5 = 0.0
-        self.LAX6 = 0.0
-        self.LHX1Y1 = 0.0
-        self.LHX1Y2 = 0.0
-        self.LHX1X2 = 0.0
-        self.LHX2Y2 = 0.0
-
-
         # <0|L1(B)[A_bar, X1(C)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_B,self.x1_C)
-        self.LAX += np.einsum('ac,ac->',tmp,self.Avv)
+        self.LAX = np.einsum('ac,ac->',tmp,self.Avv)
         tmp = ndot('ia,ka->ik',self.y1_B,self.x1_C)
         self.LAX -= np.einsum('ik,ki->',tmp,self.Aoo)
         # <0|L1(B)[A_bar, X2(C)]|0>
@@ -773,11 +934,11 @@ class HelperCCQuadraticResp(object):
         tmp = ndot('ijab,ijac->bc',self.y2_B,self.x2_C,)
         self.LAX += np.einsum('bc,bc->',tmp,self.Avv)
 
-        self.hyper += self.LAX
+        self.hyper = self.LAX
 
         # <0|L1(C)[A_bar, X1(B)]|0>
         tmp = np.einsum('ia,ic->ac', self.y1_C,self.x1_B)
-        self.LAX2 += np.einsum('ac,ac->',tmp,self.Avv)
+        self.LAX2 = np.einsum('ac,ac->',tmp,self.Avv)
         tmp = np.einsum('ia,ka->ik',self.y1_C,self.x1_B)
         self.LAX2 -= np.einsum('ik,ki->',tmp,self.Aoo)
         # <0|L1(C)[A_bar, X2(B)]|0>
@@ -799,7 +960,7 @@ class HelperCCQuadraticResp(object):
 
         # <0|L1(A)[B_bar,X1(C)]|0>
         tmp = ndot('ia,ic->ac', self.y1_A, self.x1_C)
-        self.LAX3 += np.einsum('ac,ac->',tmp,self.Bvv)
+        self.LAX3 = np.einsum('ac,ac->',tmp,self.Bvv)
         tmp = ndot('ia,ka->ik',self.y1_A,self.x1_C)
         self.LAX3 -= np.einsum('ik,ki->',tmp,self.Boo)
         # <0|L1(A)[B_bar, X2(C)]|0>
@@ -821,7 +982,7 @@ class HelperCCQuadraticResp(object):
 
         # <0|L1(C)|[B_bar,X1(A)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_C,self.x1_A)
-        self.LAX4 += np.einsum('ac,ac->',tmp,self.Bvv)
+        self.LAX4 = np.einsum('ac,ac->',tmp,self.Bvv)
         tmp = np.einsum('ia,ka->ik',self.y1_C,self.x1_A)
         self.LAX4 -= np.einsum('ik,ki->',tmp,self.Boo)
         # <0|L1(C)[B_bar, X2(A)]|0>
@@ -844,7 +1005,7 @@ class HelperCCQuadraticResp(object):
 
         # <0|L1(A)[C_bar,X1(B)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_A,self.x1_B)
-        self.LAX5 += np.einsum('ac,ac->',tmp,self.Cvv)
+        self.LAX5 = np.einsum('ac,ac->',tmp,self.Cvv)
         tmp = np.einsum('ia,ka->ik',self.y1_A,self.x1_B)
         self.LAX5 -= np.einsum('ik,ki->',tmp,self.Coo)
         # <0|L1(A)[C_bar, X2(B)]|0>
@@ -866,7 +1027,7 @@ class HelperCCQuadraticResp(object):
 
         # <0|L1(B)|[C_bar,X1(A)]|0>
         tmp = np.einsum('ia,ic->ac',self.y1_B,self.x1_A)
-        self.LAX6 += np.einsum('ac,ac->',tmp,self.Cvv)
+        self.LAX6 = np.einsum('ac,ac->',tmp,self.Cvv)
         tmp = np.einsum('ia,ka->ik',self.y1_B,self.x1_A)
         self.LAX6 -= np.einsum('ik,ki->',tmp,self.Coo)
         # <0|L1(B)[C_bar, X2(A)]|0>
@@ -885,20 +1046,14 @@ class HelperCCQuadraticResp(object):
         self.LAX6 += np.einsum('bc,bc->',tmp,self.Cvv)
  
         self.hyper += self.LAX6
-        
-        self.Fz1 = 0
-        self.Fz2 = 0
-        self.Fz3 = 0
-
+ 
         # <0|L1(0)[[A_bar,X1(B)],X1(C)]|0>
         tmp = np.einsum('ia,ja->ij',self.x1_B,self.Aov)
         tmp2 = np.einsum('ib,jb->ij',self.l1,self.x1_C)
-        self.Fz1 -= np.einsum('ij,ij->',tmp2,tmp)
-
+        self.Fz1 = np.einsum('ij,ij->',tmp2,tmp)
         tmp = np.einsum('jb,ib->ij',self.x1_C,self.Aov)
         tmp2 = np.einsum('ia,ja->ij',self.x1_B,self.l1)
         self.Fz1 -= np.einsum('ij,ij->',tmp2,tmp)
-
         # <0|L2(0)[[A_bar,X1(B)],X2(C)]|0>  
         tmp = np.einsum('ia,ja->ij',self.x1_B,self.Aov)
         tmp2 = np.einsum('jkbc,ikbc->ij',self.x2_C,self.l2)
@@ -911,7 +1066,7 @@ class HelperCCQuadraticResp(object):
         # <0|L2(0)[[A_bar,X2(B)],X1(C)]|0>   
         tmp = np.einsum('ia,ja->ij',self.x1_C,self.Aov)
         tmp2 = np.einsum('jkbc,ikbc->ij',self.x2_B,self.l2)
-        self.Fz1 -= np.einsum('ij,ij->',tmp2,tmp)
+        self.Fz1 = np.einsum('ij,ij->',tmp2,tmp)
 
         tmp = np.einsum('ia,jkac->jkic',self.x1_C,self.l2)
         tmp = np.einsum('jkbc,jkic->ib',self.x2_B,tmp)
@@ -920,7 +1075,7 @@ class HelperCCQuadraticResp(object):
         # <0|L1(0)[B_bar,X1(A)],X1(C)]|0>
         tmp = np.einsum('ia,ja->ij',self.x1_A,self.Bov)
         tmp2 = np.einsum('ib,jb->ij',self.l1,self.x1_C)
-        self.Fz2 -= np.einsum('ij,ij->',tmp2,tmp)
+        self.Fz2 = np.einsum('ij,ij->',tmp2,tmp)
 
         tmp = np.einsum('jb,ib->ij',self.x1_C,self.Bov)
         tmp2 = np.einsum('ia,ja->ij',self.x1_A,self.l1)
@@ -947,7 +1102,7 @@ class HelperCCQuadraticResp(object):
         # <0|L1(0)[C_bar,X1(A)],X1(B)]|0>  
         tmp = np.einsum('ia,ja->ij',self.x1_A,self.Cov)
         tmp2 = np.einsum('ib,jb->ij',self.l1,self.x1_B)
-        self.Fz3 -= np.einsum('ij,ij->',tmp2,tmp)
+        self.Fz3 = np.einsum('ij,ij->',tmp2,tmp)
         
         tmp = np.einsum('jb,ib->ij',self.x1_B,self.Cov)
         tmp2 = np.einsum('ia,ja->ij',self.x1_A,self.l1)
@@ -973,13 +1128,11 @@ class HelperCCQuadraticResp(object):
 
         self.hyper += self.Fz1+self.Fz2+self.Fz3
 
-
-        self.G = 0
         # <L1(0)|[[[H_bar,X1(A)],X1(B)],X1(C)]|0>
         tmp = np.einsum('ia,ijac->jc',self.x1_A,self.Loovv)
         tmp = np.einsum('kc,jc->jk',self.x1_C,tmp)
         tmp2 = np.einsum('jb,kb->jk',self.x1_B,self.l1)
-        self.G -= np.einsum('jk,jk->',tmp2,tmp)
+        self.G = np.einsum('jk,jk->',tmp2,tmp)
 
         tmp = np.einsum('ia,ikab->kb',self.x1_A,self.Loovv)
         tmp = np.einsum('jb,kb->jk',self.x1_B,tmp)
@@ -1252,23 +1405,20 @@ class HelperCCQuadraticResp(object):
 
         self.hyper += self.G
 
-
-        self.Bcon1 = 0
         # <O|L1(A)[[Hbar(0),X1(B),X1(C)]]|0>
         tmp  = -1.0*np.einsum('jc,kb->jkcb',self.Hov,self.y1_A)
         tmp -= np.einsum('jc,kb->jkcb',self.y1_A,self.Hov)
         tmp -= 2.0*np.einsum('kjib,ic->jkcb',self.Hooov,self.y1_A)
         tmp += np.einsum('jkib,ic->jkcb',self.Hooov,self.y1_A)         
         tmp -= 2.0*np.einsum('jkic,ib->jkcb',self.Hooov,self.y1_A) 
-        tmp += np.einsum('kjic,ib->jkcb',self.Hooov,self.y1_A)         
-
+        tmp = np.einsum('kjic,ib->jkcb',self.Hooov,self.y1_A)         
         tmp += 2.0*np.einsum('ajcb,ka->jkcb',self.Hvovv,self.y1_A)
         tmp -= np.einsum('ajbc,ka->jkcb',self.Hvovv,self.y1_A)
         tmp += 2.0*np.einsum('akbc,ja->jkcb',self.Hvovv,self.y1_A)
         tmp -= np.einsum('akcb,ja->jkcb',self.Hvovv,self.y1_A)
 
         tmp2 = np.einsum('miae,me->ia',tmp,self.x1_B)         
-        self.Bcon1 += ndot('ia,ia->',tmp2,self.x1_C)
+        self.Bcon1 = ndot('ia,ia->',tmp2,self.x1_C)
 
         # <O|L2(A)|[[Hbar(0),X1(B)],X1(C)]|0>
         tmp   = -1.0*np.einsum('janc,nkba->jckb',self.Hovov,self.y2_A) 
@@ -1356,7 +1506,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_B)
         self.Bcon1 -= np.einsum("ka,ka->",tmp,self.y1_A) 
 
-
         # <O|L2(A)[[Hbar(0),X1(B)],X2(C)]]|0>
         tmp = np.einsum("klcd,lkdb->cb",self.x2_C,self.y2_A)
         tmp = np.einsum("jb,cb->jc",self.x1_B,tmp)
@@ -1415,7 +1564,6 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('ia,nkba->nkbi',self.x1_B,self.y2_A)         
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_C,tmp)
         self.Bcon1 += np.einsum('jnci,jinc->',tmp,self.Hooov)
-
         
         # <O|L1(A)[[Hbar(0),X2(B)],X1(C)]]|0>
         tmp  = 2.*np.einsum("jkbc,kc->jb",self.x2_B,self.y1_A)
@@ -1430,7 +1578,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("jkbc,jibc->ki",self.x2_B,self.Loovv)
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_C)
         self.Bcon1 -= np.einsum("ka,ka->",tmp,self.y1_A)
-
 
         # <O|L2(A)[[Hbar(0),X2(B)],X1(C)]]|0>
         tmp = np.einsum("klcd,lkdb->cb",self.x2_B,self.y2_A)
@@ -1491,8 +1638,6 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_B,tmp)
         self.Bcon1 += np.einsum('jnci,jinc->',tmp,self.Hooov)
 
-
-        self.Bcon2 = 0
         # <O|L1(B)[[Hbar(0),X1(A),X1(C)]]|0>
         tmp  = -1.0*np.einsum('jc,kb->jkcb',self.Hov,self.y1_B)
         tmp -= np.einsum('jc,kb->jkcb',self.y1_B,self.Hov)
@@ -1506,8 +1651,7 @@ class HelperCCQuadraticResp(object):
         tmp -= np.einsum('akcb,ja->jkcb',self.Hvovv,self.y1_B)
 
         tmp2 = np.einsum('miae,me->ia',tmp,self.x1_A)         
-        self.Bcon2 += ndot('ia,ia->',tmp2,self.x1_C)
-
+        self.Bcon2 = ndot('ia,ia->',tmp2,self.x1_C)
 
         # <O|L2(B)|[[Hbar(0),X1(A)],X1(C)]|0>
         tmp   = -1.0*np.einsum('janc,nkba->jckb',self.Hovov,self.y2_B) 
@@ -1540,7 +1684,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum('kc,ac->ka',self.x1_A,tmp)
         tmp2 = np.einsum('ld,lkda->ka',self.x1_C,self.Loovv)
         self.Bcon2 -= ndot('ka,ka->',tmp2,tmp)
-
 
         # <O|L2(B)[[Hbar(0),X2(A)],X2(C)]|0>
         tmp = np.einsum("klcd,ijcd->ijkl",self.x2_C,self.y2_B)   
@@ -1582,7 +1725,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("lida,jlbd->ijab",tmp,self.Loovv)
         self.Bcon2 += 2.*np.einsum("ijab,ijab->",tmp,self.x2_A)
 
-
         # <O|L1(B)[[Hbar(0),X1(A)],X2(C)]]|0> 
         tmp = 2.*np.einsum("jkbc,kc->jb",self.x2_C,self.y1_B)
         tmp -= np.einsum("jkcb,kc->jb",self.x2_C,self.y1_B)
@@ -1596,7 +1738,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("jkbc,jibc->ki",self.x2_C,self.Loovv)
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_A)
         self.Bcon2 -= np.einsum("ka,ka->",tmp,self.y1_B) 
-
 
         # <O|L2(B)[[Hbar(0),X1(A)],X2(C)]]|0>
         tmp = np.einsum("klcd,lkdb->cb",self.x2_C,self.y2_B)
@@ -1657,7 +1798,6 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_C,tmp)
         self.Bcon2 += np.einsum('jnci,jinc->',tmp,self.Hooov)
 
-
         # <O|L1(B)[[Hbar(0),X2(A)],X1(C)]]|0> 
         tmp  = 2.*np.einsum("jkbc,kc->jb",self.x2_A,self.y1_B)
         tmp -= np.einsum("jkcb,kc->jb",self.x2_A,self.y1_B)
@@ -1671,7 +1811,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("jkbc,jibc->ki",self.x2_A,self.Loovv)
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_C)
         self.Bcon2 -= np.einsum("ka,ka->",tmp,self.y1_B)
-
 
         # <O|L2(B)[[Hbar(0),X2(A)],X1(C)]]|0>
         tmp = np.einsum("klcd,lkdb->cb",self.x2_A,self.y2_B)
@@ -1732,8 +1871,6 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_A,tmp)
         self.Bcon2 += np.einsum('jnci,jinc->',tmp,self.Hooov)
         
-
-        self.Bcon3 = 0
         # <0|L1(C)[[Hbar(0),X1(A),X1(B)]]|0>
         tmp  = -1.0*np.einsum('jc,kb->jkcb',self.Hov,self.y1_C)
         tmp -= np.einsum('jc,kb->jkcb',self.y1_C,self.Hov)
@@ -1748,7 +1885,7 @@ class HelperCCQuadraticResp(object):
         tmp -= np.einsum('akcb,ja->jkcb',self.Hvovv,self.y1_C)
 
         tmp2 = np.einsum('miae,me->ia',tmp,self.x1_A)         
-        self.Bcon3 += ndot('ia,ia->',tmp2,self.x1_B)
+        self.Bcon3 = ndot('ia,ia->',tmp2,self.x1_B)
 
         # <0|L2(C)|[[Hbar(0),X1(A)],X1(B)]|0>
         tmp   = -1.0*np.einsum('janc,nkba->jckb',self.Hovov,self.y2_C) 
@@ -1895,7 +2032,6 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_B,tmp)
         self.Bcon3 += np.einsum('jnci,jinc->',tmp,self.Hooov)
 
-
         # <0|L1(C)[[Hbar(0),X2(A)],X1(B)]]|0> 
         tmp = 2.*np.einsum("jkbc,kc->jb",self.x2_A,self.y1_C)
         tmp -= np.einsum("jkcb,kc->jb",self.x2_A,self.y1_C)
@@ -1909,7 +2045,6 @@ class HelperCCQuadraticResp(object):
         tmp = np.einsum("jkbc,jibc->ki",self.x2_A,self.Loovv)
         tmp = np.einsum("ki,ia->ka",tmp,self.x1_B)
         self.Bcon3 -= np.einsum("ka,ka->",tmp,self.y1_C)
-
 
         # <0|L1(C)[[Hbar(0),X2(A)],X1(B)]]|0> 
         tmp = np.einsum("klcd,lkdb->cb",self.x2_A,self.y2_C)
@@ -1970,43 +2105,9 @@ class HelperCCQuadraticResp(object):
         tmp  = np.einsum('jkbc,nkbi->jnci',self.x2_A,tmp)
         self.Bcon3 += np.einsum('jnci,jinc->',tmp,self.Hooov)
       
-        self.hyper += self.Bcon1 + self.Bcon2+ self.Bcon3
-   
+        self.hyper += self.Bcon1 + self.Bcon2 + self.Bcon3
+  
 
         return self.hyper
 
 # End HelperCCQuadraticResp class
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
