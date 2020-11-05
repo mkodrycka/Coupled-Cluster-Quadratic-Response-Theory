@@ -912,7 +912,6 @@ class HelperCCQuadraticResp(object):
         -------
         hyper: float
               The quadratic response function value.
-
         """        
 
         # <0|L1(B)[A_bar, X1(C)]|0>
@@ -2108,7 +2107,6 @@ class HelperCCQuadraticResp(object):
       
         self.hyper += self.Bcon1 + self.Bcon2 + self.Bcon3
   
-
         return self.hyper
 
 # End HelperCCQuadraticResp class

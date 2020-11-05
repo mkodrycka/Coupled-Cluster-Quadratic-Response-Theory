@@ -180,14 +180,13 @@ for a in range(0, 3):
         str_b = "MU_" + cart[b]
         for c in range(0, 3):
             str_c = "MU_" + cart[c]
-            hyper_AB_1st[a,b,c] =  HelperCCQuadraticResp(ccsd, cchbar, cclambda, ccpert_om_sum[str_a],
+            hyper_AB_1st[a,b,c] =  HelperCCQuadraticResp(ccsd, cchbar, cclambda, ccpert_om_sum[str_a],\
                                  ccpert_om1[str_b],ccpert_om2[str_c]).quadraticresp()
-            hyper_AB_2nd[a,b,c] =  HelperCCQuadraticResp(ccsd, cchbar, cclambda, ccpert_om_sum_2nd[str_a],
+            hyper_AB_2nd[a,b,c] =  HelperCCQuadraticResp(ccsd, cchbar, cclambda, ccpert_om_sum_2nd[str_a],\
                                   ccpert_om1_2nd[str_b],ccpert_om2_2nd[str_c]).quadraticresp()
             hyper_AB[a,b,c] = (hyper_AB_1st[a,b,c] + hyper_AB_2nd[a,b,c] )/2
 
-
-print("\n\nTest, hyperpolarizability:")
+print("\n\nHyperpolarizability components:")
 print("\Beta_zxx = %10.12lf" %(hyper_AB[2,0,0]))
 print("\Beta_xzx = %10.12lf" %(hyper_AB[0,2,0]))
 print("\Beta_xxz = %10.12lf" %(hyper_AB[0,0,2]))
