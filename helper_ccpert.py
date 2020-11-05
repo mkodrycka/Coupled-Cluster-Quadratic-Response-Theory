@@ -34,15 +34,16 @@ from utils import helper_diis
 
 class HelperCCPert(object):
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega1):
-
+        
         """
-        Initializes the HelperCCPert object
+        Initializes the HelperCCPert object.
 
         Parameters:
         -----------
         neme: string 
-            Specifies perturbation irrep.
-        pert: perturbation object
+            Perturbation irrep.
+        pert: ndarray
+             Dipole integrals in the MO basis.
         ccsd: ccsd object
              A initialized ccsd object. 
         hbar: hbar object
