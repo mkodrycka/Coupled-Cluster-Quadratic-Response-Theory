@@ -34,7 +34,6 @@ from utils import helper_diis
 
 class HelperCCPert(object):
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega1):
-        
         """
         Initializes the HelperCCPert object.
 
@@ -42,14 +41,14 @@ class HelperCCPert(object):
         -----------
         neme: string 
             Perturbation irrep.
-        pert: ndarray
+        pert: NumpPy array
              Dipole integrals in the MO basis.
         ccsd: ccsd object
-             A initialized ccsd object. 
+             An initialized ccsd object. 
         hbar: hbar object
-             A initialized hbar object.  
+             An initialized hbar object.  
         cclambda: cclambda object
-	     A initialized cclambda object. 
+	     An initialized cclambda object. 
         omega1: float 
 	      Frequency of the perturbation.
         """
@@ -118,7 +117,6 @@ class HelperCCPert(object):
         # all oribitals : p, q, r, s, t, u, v
 
     def get_MO(self, string):
- 
         """
         Obtains integrals in the MO basis.
 
@@ -129,9 +127,9 @@ class HelperCCPert(object):
                
 	Returns:
         --------  
-           MO: ndarray
+           MO: Numpy array
              Integrals in the MO basis.
-        """   
+        """  
  
         if len(string) != 4:
             psi4.core.clean()
@@ -139,19 +137,18 @@ class HelperCCPert(object):
         return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]],
                        self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
-    def get_F(self, string):
-
+    def get_F(self, indexes):
         """
         Obtains the Fock Matix.
 
         Parameters:
         -----------
-           string: string
+           indexes: string
              String of Fock indexes.    
                
         Returns:
         --------  
-           F: ndarray
+           F: NumPy array
              The Fock Matrix in the MO basis.
         """ 
 
@@ -162,7 +159,6 @@ class HelperCCPert(object):
 
 
     def get_pert(self, string):
-
         """
         Obtains the Perturbation Matix.
 
@@ -173,7 +169,7 @@ class HelperCCPert(object):
                
         Returns:
         --------  
-           per: ndarray
+           per: Numpy array
              The perturbation matrix in the MO basis.
         """
 
@@ -188,15 +184,44 @@ class HelperCCPert(object):
     # since A is a one body operator, the expansion truncates at double commutators.
 
     def build_Aoo(self):
+        """
+        Obtains the Perturbation Matix with (o,o) indexes.
+
+        Returns:
+        --------  
+           Avo: Numpy array
+             The perturbation matrix with (o,o) indexes.
+        """
+
         Aoo = self.get_pert('oo').copy()
         Aoo += ndot('ie,me->mi', self.t1, self.get_pert('ov'))
+
         return Aoo
 
     def build_Aov(self):
+        """
+        Obtains the Perturbation Matix with (o,v) indexes.
+        
+        Returns:
+        --------  
+           Avo: Numpy array
+             The perturbation matrix with (o,v) indexes.
+        """
+
         Aov = self.get_pert('ov').copy()
+
         return Aov
 
     def build_Avo(self):
+        """
+        Obtains the Perturbation Matix with (v,o) indexes.
+        
+        Returns:
+        --------  
+           Avo: Numpy array
+             The perturbation matrix with (v,o) indexes.
+        """
+
         Avo =  self.get_pert('vo').copy()
         Avo += ndot('ae,ie->ai', self.get_pert('vv'), self.t1)
         Avo -= ndot('ma,mi->ai', self.t1, self.get_pert('oo'))
@@ -204,48 +229,132 @@ class HelperCCPert(object):
         Avo += ndot('imea,me->ai', self.t2, self.get_pert('ov'), prefactor=-1.0)
         tmp = ndot('ie,ma->imea', self.t1, self.t1)
         Avo -= ndot('imea,me->ai', tmp, self.get_pert('ov'))
+
         return Avo
 
     def build_Avv(self):
+        """
+        Obtains the Perturbation Matix with (v,v) indexes.
+        
+        Returns:
+        --------  
+           Avv: Numpy array
+             The perturbation matrix with (v,v) indexes.
+        """
+
         Avv =  self.get_pert('vv').copy()
         Avv -= ndot('ma,me->ae', self.t1, self.get_pert('ov'))
+
         return Avv
 
     def build_Aovoo(self):
+        """
+        Obtains the Perturbation tensor with (o,v,o,o) indexes.
+        
+        Returns:
+        --------  
+           Aovoo: Numpy array
+             The perturbation tensor (o,v,o,o) indexes.
+        """
+
         Aovoo = ndot('ijeb,me->mbij', self.t2, self.get_pert('ov'))
+
         return Aovoo
 
     def build_Avvvo(self):
+        """
+        Obtains the Perturbation tensor with (v,v,v,o) indexes.
+        
+        Returns:
+        --------  
+           Avvvo: Numpy array
+             The perturbation tensor (v,v,v,o) indexes.
+        """
+
         Avvvo = -1.0*ndot('miab,me->abei', self.t2, self.get_pert('ov'))
+
         return Avvvo
 
     def build_Avvoo(self):
+        """
+        Obtains the Perturbation tensor with (v,v,o,o) indexes.
+        
+        Returns:
+        --------  
+           Avvoo: Numpy array
+             The perturbation tensor (v,v,o,o) indexes.
+        """
+
         Avvoo = ndot('ijeb,ae->abij', self.t2, self.build_Avv())
         Avvoo -= ndot('mjab,mi->abij', self.t2, self.build_Aoo())
+
         return Avvoo
 
     # Intermediates to avoid construction of 3 body Hbar terms
     # in solving X amplitude equations.
     def build_Zvv(self):
+        """
+        Obtains the intermediate Z matrix with (v,v) indexes.
+        It is used to avoid construction of 3 body Hbar terms.
+        
+        Returns:
+        --------  
+           Zvv: Numpy array
+             The intermediate Z matrix with (v,v) indexes.
+        """
+
         Zvv = ndot('amef,mf->ae', self.Hvovv, self.x1, prefactor=2.0)
         Zvv += ndot('amfe,mf->ae', self.Hvovv, self.x1, prefactor=-1.0)
         Zvv -= ndot('mnaf,mnef->ae', self.x2, self.Loovv)
+
         return Zvv
 
     def build_Zoo(self):
+        """
+        Obtains the intermediate Z matrix with (o,o) indexes.
+        It is used to avoid construction of 3 body Hbar terms.
+        
+        Returns:
+        --------  
+           Zoo: Numpy array
+             The intermediate Z matrix with (o,o) indexes.
+        """ 
+
         Zoo = ndot('mnie,ne->mi', self.Hooov, self.x1, prefactor=2.0)
         Zoo -= ndot('nmie,ne->mi', self.Hooov, self.x1, prefactor=-1.0)
         Zoo -= ndot('mnef,inef->mi', self.Loovv, self.x2)
+
         return Zoo
 
     # Intermediates to avoid construction of 3 body Hbar terms
     # in solving Y amplitude equations (just like in lambda equations).
     def build_Goo(self, t2, y2):
+        """
+        Obtains the intermediate G matrix with (o,o) indexes.
+        It is used to avoid construction of 3 body Hbar terms.
+        
+        Returns:
+        --------  
+           Goo: Numpy array
+             The intermediate G matrix with (o,o) indexes.
+        """
+
         Goo = ndot('mjab,ijab->mi', t2, y2)
+
         return Goo
 
     def build_Gvv(self, y2, t2):
+        """
+        Obtains the intermediate G matrix with (o,o) indexes.
+        It is used to avoid construction of 3 body Hbar terms.
+        
+        Returns:
+        --------  
+           Gvv: Numpy array
+             The intermediate G matrix with (v,v) indexes.
+        """
         Gvv = -1.0*ndot('ijab,ijeb->ae', y2, t2)
+
         return Gvv
 
     def update_X(self, omega):
@@ -351,13 +460,12 @@ class HelperCCPert(object):
         return np.sqrt(rms)
 
     def inhomogenous_y2(self):
-
         """
         Computes inhomogenous terms appearing in Y2 equations.
   
         Returns: 
         -------
-            r_y2: ndarray
+            r_y2: NumPy array
               Perturbed Y2 amplitudes. 
         """
 
@@ -429,13 +537,12 @@ class HelperCCPert(object):
 
 
     def inhomogenous_y1(self):
-
         """
         Computes inhomogenous terms appearing in Y1 equations.
   
         Returns: 
         -------
-            r_y1: ndarray
+            r_y1: NumPy array
               Perturbed Y1 amplitudes. 
         """
 
@@ -515,7 +622,6 @@ class HelperCCPert(object):
         return r_y1
 
     def update_Y(self, omega):
-
         """
         Updates Y1 and Y2 amplitudes.
   
@@ -606,7 +712,6 @@ class HelperCCPert(object):
         return np.sqrt(rms)
 
     def pseudoresponse(self, hand):
-
         """
         Obtains psudoresponse value.
   
@@ -622,6 +727,7 @@ class HelperCCPert(object):
             polar: float
               Psudoresponse value. 
         """
+
         polar1 = 0
         polar2 = 0
         if hand == 'right':
@@ -640,7 +746,6 @@ class HelperCCPert(object):
         return polar
 
     def solve(self, hand, r_conv=1.e-7, maxiter=100, max_diis=8, start_diis=1):
-
         """
         Engine which solves perturbed amplitudes.
   
@@ -725,20 +830,19 @@ class HelperCCPert(object):
 class HelperCCLinresp(object):
 
     def __init__(self, cclambda, ccpert_A, ccpert_B):
-
         """
         Initializes the HelperCCLinresp object.
         
         Parameters:
         -----------
         cclambda: cclambda object
-             A initialized cclambda object.  
+             An initialized cclambda object.  
         ccpert_A: ccpert object
-             A initialized ccpert object containing all info about perturbation A.
+             An initialized ccpert object containing all info about perturbation A.
         ccpert_B: ccpert object
-             A initialized ccpert object containing all info about perturbation B.
+             An initialized ccpert object containing all info about perturbation B.
         ccpert_C: ccpert object  
-             A initialized ccpert object containing all info about perturbation C. 
+             An initialized ccpert object containing all info about perturbation C. 
         """
 
         # start of the cclinresp class 
@@ -763,14 +867,13 @@ class HelperCCLinresp(object):
         self.y2_B = ccpert_B.y2
 	
     def linresp(self):
-
         """
         Computes the Linear Response Function value.
  
         Returns
         -------
         polar: float
-              The linear response function value.
+             The linear response function value.
 
         Note:
         -----
@@ -823,24 +926,23 @@ class HelperCCLinresp(object):
 class HelperCCQuadraticResp(object):
 
     def __init__(self, ccsd,  cchbar, cclambda, ccpert_A, ccpert_B, ccpert_C):
-
         """
         Initializes the HelperCCQuadraticResp object.
         
         Parameters:
         -----------
         ccsd: ccsd object
-             A initialized ccsd object.        
+             An initialized ccsd object.        
         cchbar: cchbar object
-             A initialized cchbar object.  
+             An initialized cchbar object.  
         cclambda: cclambda object
-             A initialized cclambda object.  
+             An initialized cclambda object.  
         ccpert_A: ccpert object
-             A initialized ccpert object containing all info about perturbation A.
+             An initialized ccpert object containing all info about perturbation A.
         ccpert_B: ccpert object
-             A initialized ccpert object containing all info about perturbation B.
+             An initialized ccpert object containing all info about perturbation B.
         ccpert_C: ccpert object  
-             A initialized ccpert object containing all info about perturbation C. 
+             An initialized ccpert object containing all info about perturbation C. 
         """
 
         time_init = time.time()
@@ -903,15 +1005,14 @@ class HelperCCQuadraticResp(object):
 
 
     def quadraticresp(self):
-
         """
-        Computes Quadratic Response Function value
+        Computes Quadratic Response Function value.
         Refer to eq. 107 of [Koch:1991:3333] for the general form of quadratic response functions.
         
         Returns
         -------
         hyper: float
-              The quadratic response function value.
+             The quadratic response function value.
         """        
 
         # <0|L1(B)[A_bar, X1(C)]|0>
