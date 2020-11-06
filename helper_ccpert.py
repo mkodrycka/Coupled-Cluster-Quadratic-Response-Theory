@@ -116,13 +116,13 @@ class HelperCCPert(object):
         # virt orbitals : a, b, c, d, e, f
         # all oribitals : p, q, r, s, t, u, v
 
-    def get_MO(self, string):
+    def get_MO(self, indexes):
         """
         Obtains integrals in the MO basis.
 
         Parameters:
         -----------
-           string: string
+           indexes: string
              String of integral indexes.    
                
 	Returns:
@@ -158,13 +158,13 @@ class HelperCCPert(object):
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
 
-    def get_pert(self, string):
+    def get_pert(self, indexes):
         """
-        Obtains the Perturbation Matix.
+        Obtains the perturbation Matix.
 
         Parameters:
         -----------
-           string: string
+           indexes: string
              String of perturbation indexes.    
                
         Returns:
@@ -185,7 +185,7 @@ class HelperCCPert(object):
 
     def build_Aoo(self):
         """
-        Obtains the Perturbation Matix with (o,o) indexes.
+        Obtains the perturbation Matix with (o,o) indexes.
 
         Returns:
         --------  
@@ -200,7 +200,7 @@ class HelperCCPert(object):
 
     def build_Aov(self):
         """
-        Obtains the Perturbation Matix with (o,v) indexes.
+        Obtains the perturbation Matix with (o,v) indexes.
         
         Returns:
         --------  
@@ -214,7 +214,7 @@ class HelperCCPert(object):
 
     def build_Avo(self):
         """
-        Obtains the Perturbation Matix with (v,o) indexes.
+        Obtains the perturbation Matix with (v,o) indexes.
         
         Returns:
         --------  
@@ -234,7 +234,7 @@ class HelperCCPert(object):
 
     def build_Avv(self):
         """
-        Obtains the Perturbation Matix with (v,v) indexes.
+        Obtains the perturbation Matix with (v,v) indexes.
         
         Returns:
         --------  
@@ -249,7 +249,7 @@ class HelperCCPert(object):
 
     def build_Aovoo(self):
         """
-        Obtains the Perturbation tensor with (o,v,o,o) indexes.
+        Obtains the perturbation tensor with (o,v,o,o) indexes.
         
         Returns:
         --------  
@@ -263,7 +263,7 @@ class HelperCCPert(object):
 
     def build_Avvvo(self):
         """
-        Obtains the Perturbation tensor with (v,v,v,o) indexes.
+        Obtains the perturbation tensor with (v,v,v,o) indexes.
         
         Returns:
         --------  
@@ -277,7 +277,7 @@ class HelperCCPert(object):
 
     def build_Avvoo(self):
         """
-        Obtains the Perturbation tensor with (v,v,o,o) indexes.
+        Obtains the perturbation tensor with (v,v,o,o) indexes.
         
         Returns:
         --------  
@@ -358,7 +358,6 @@ class HelperCCPert(object):
         return Gvv
 
     def update_X(self, omega):
-
         """
         Updates X1 and X2 amplitudes.
   
@@ -385,7 +384,7 @@ class HelperCCPert(object):
          Note that the RHS terms have exactly the same structure as EOM-CCSD sigma equations.
          Spin Orbital expressions (Einstein summation):
 
-         #X1 equations: 
+         X1 equations: 
          -omega * X_ia + A_bar_ai + X_ie * Hvv_ae - X_ma * Hoo_mi + X_me * Hovvo_maei + X_miea * Hov_me 
          + 0.5 * X_imef * Hvovv_amef - 0.5 * X_mnae * Hooov_mnie = 0
 
@@ -768,7 +767,6 @@ class HelperCCPert(object):
         --------
             pseudoresponse: float
                The converged pseudoresponse value.        
-
         """
 
         ### Start of the solve routine 
@@ -1006,7 +1004,7 @@ class HelperCCQuadraticResp(object):
 
     def quadraticresp(self):
         """
-        Computes Quadratic Response Function value.
+        Computes the Quadratic Response Function value.
         Refer to eq. 107 of [Koch:1991:3333] for the general form of quadratic response functions.
         
         Returns
